@@ -10,6 +10,44 @@ This emphasis on risk measurement directly influences the design of credit scori
 
 Consequently, interpretability and documentation become critical requirements. Every stage of the modeling process—including data preparation, feature engineering, model selection, validation, and monitoring—must be clearly documented. This ensures regulatory compliance, supports model governance, and enables ongoing validation and auditing of the credit risk framework.
 
+## Basel II Internal Ratings-Based (IRB) Perspective
+
+Under Basel II's Internal Ratings-Based (IRB) framework, banks may use internally developed models to estimate key risk parameters such as:
+
+- Probability of Default (PD)
+- Loss Given Default (LGD)
+- Exposure at Default (EAD)
+
+Although the Xente dataset does not contain actual default outcomes, the objective of this project closely aligns with the estimation of Probability of Default through alternative behavioral indicators.
+
+The IRB framework places strong emphasis on:
+
+1. Model transparency and explainability
+2. Consistent documentation
+3. Independent validation
+4. Ongoing monitoring and recalibration
+5. Demonstration of predictive power and stability
+
+These principles influence the project architecture by motivating the use of reproducible pipelines, experiment tracking, documented feature engineering procedures, and explainable baseline models alongside more complex machine learning approaches.
+
+## Model Governance and Validation
+
+In regulated financial environments, model development extends beyond predictive accuracy.
+
+A robust model governance framework includes:
+
+- Version control of code and data transformations
+- Documentation of assumptions and limitations
+- Independent validation of model performance
+- Monitoring for performance drift
+- Periodic recalibration and retraining
+
+To support these requirements, this project will utilize:
+
+- GitHub for version control
+- MLflow for experiment tracking and model versioning
+- Automated testing for data processing pipelines
+- Reproducible feature engineering workflows
 
 ## 2. The Need for a Proxy Variable and Associated Business Risks
 
