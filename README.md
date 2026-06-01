@@ -1,3 +1,41 @@
+# Installation
+
+## Clone Repository
+
+git clone <repository_url>
+
+cd credit-risk-model
+
+## Create Virtual Environment
+
+python -m venv venv
+
+source venv/bin/activate
+
+## Install Dependencies
+
+pip install -r requirements.txt
+
+# Data Source
+
+Dataset:
+
+Xente Fraud Detection Dataset
+
+Source:
+https://www.kaggle.com/competitions/xente-fraud-detection
+
+The raw dataset should be placed in:
+
+data/raw/data.csv
+
+# Running EDA
+
+jupyter notebook notebooks/eda.ipynb
+
+
+
+
 Credit Scoring Business Understanding
 
 # Credit Scoring Business Understanding
