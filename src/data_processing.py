@@ -190,7 +190,16 @@ def assign_high_risk_label(rfm_df):
 
     print(cluster_summary)
 
-    high_risk_cluster = 4
+    cluster_summary["risk_score"] = (
+    cluster_summary["Recency"]
+    - cluster_summary["Frequency"]
+    - cluster_summary["Monetary"]
+    )
+
+    high_risk_cluster = (
+        cluster_summary["risk_score"]
+        .idxmax()
+    )
 
     rfm_df["is_high_risk"] = (
     rfm_df["cluster"]
@@ -199,6 +208,7 @@ def assign_high_risk_label(rfm_df):
 
     return rfm_df
 
+rfm = assign_high_risk_label(rfm)
 
 def merge_target_variable(
     transaction_df,
@@ -336,3 +346,13 @@ def calculate_information_value(
     """
     Calculate Information Value.
     """
+    pass
+
+X_processed = feature_pipeline.fit_transform(
+    processed_df
+)
+
+processed_df.to_csv(
+    "data/processed/processed_data.csv",
+    index=False
+)
