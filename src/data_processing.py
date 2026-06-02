@@ -9,6 +9,8 @@ from sklearn.preprocessing import (
     StandardScaler
 )
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from category_encoders.woe import WOEEncoder
 
 
 def create_aggregate_features(df):
@@ -95,3 +97,242 @@ required_columns = [
 
 for col in required_columns:
     print(col, col in df.columns)
+
+
+def create_rfm_features(df):
+    """
+    Create Recency, Frequency and Monetary metrics.
+    """
+
+    df = df.copy()
+
+    df["TransactionStartTime"] = pd.to_datetime(
+        df["TransactionStartTime"]
+    )
+
+    snapshot_date = (
+        df["TransactionStartTime"].max()
+        + pd.Timedelta(days=1)
+    )
+
+    rfm = (
+        df.groupby("CustomerId")
+        .agg(
+            Recency=(
+                "TransactionStartTime",
+                lambda x: (
+                    snapshot_date - x.max()
+                ).days
+            ),
+            Frequency=("TransactionId", "count"),
+            Monetary=("Amount", "sum")
+        )
+        .reset_index()
+    )
+
+    return rfm
+
+rfm = create_rfm_features(df)
+
+print(rfm.head())
+
+def cluster_customers_rfm(rfm_df):
+    """
+    Segment customers using KMeans.
+    """
+
+    scaler = StandardScaler()
+
+    rfm_scaled = scaler.fit_transform(
+        rfm_df[
+            [
+                "Recency",
+                "Frequency",
+                "Monetary"
+            ]
+        ]
+    )
+
+    kmeans = KMeans(
+        n_clusters=3,
+        random_state=42,
+        n_init=10
+    )
+
+    rfm_df["cluster"] = (
+        kmeans.fit_predict(rfm_scaled)
+    )
+
+    return rfm_df
+
+rfm = cluster_customers_rfm(rfm)
+
+print(
+    rfm["cluster"].value_counts()
+)
+
+def assign_high_risk_label(rfm_df):
+    """
+    Identify least-engaged cluster and
+    assign is_high_risk.
+    """
+
+    cluster_summary = (
+        rfm_df.groupby("cluster")
+        .agg(
+            {
+                "Recency": "mean",
+                "Frequency": "mean",
+                "Monetary": "mean"
+            }
+        )
+    )
+
+    print(cluster_summary)
+
+    high_risk_cluster = 4
+
+    rfm_df["is_high_risk"] = (
+    rfm_df["cluster"]
+    == high_risk_cluster
+    ).astype(int)
+
+    return rfm_df
+
+
+def merge_target_variable(
+    transaction_df,
+    rfm_df
+):
+    """
+    Merge target variable back to
+    transaction dataset.
+    """
+
+    return transaction_df.merge(
+        rfm_df[
+            [
+                "CustomerId",
+                "is_high_risk"
+            ]
+        ],
+        on="CustomerId",
+        how="left"
+    )
+
+processed_df = merge_target_variable(
+    df,
+    rfm
+)
+
+print(
+    processed_df["is_high_risk"]
+    .value_counts()
+)
+
+
+numeric_features = [
+    "Amount",
+    "Value",
+    "transaction_hour",
+    "transaction_day",
+    "transaction_month",
+    "transaction_year",
+    "total_transaction_amount",
+    "avg_transaction_amount",
+    "transaction_count",
+    "std_transaction_amount"
+]
+
+categorical_features = [
+    "ProductCategory",
+    "ChannelId",
+    "PricingStrategy",
+    "ProviderId"
+]
+
+numeric_pipeline = Pipeline(
+    steps=[
+        (
+            "imputer",
+            SimpleImputer(
+                strategy="median"
+            )
+        ),
+        (
+            "scaler",
+            StandardScaler()
+        )
+    ]
+)
+
+categorical_pipeline = Pipeline(
+    steps=[
+        (
+            "imputer",
+            SimpleImputer(
+                strategy="most_frequent"
+            )
+        ),
+        (
+            "encoder",
+            OneHotEncoder(
+                handle_unknown="ignore"
+            )
+        )
+    ]
+)
+
+preprocessor = ColumnTransformer(
+    transformers=[
+        (
+            "num",
+            numeric_pipeline,
+            numeric_features
+        ),
+        (
+            "cat",
+            categorical_pipeline,
+            categorical_features
+        )
+    ]
+)
+
+feature_pipeline = Pipeline(
+    steps=[
+        (
+            "preprocessor",
+            preprocessor
+        )
+    ]
+)
+
+
+def apply_woe_encoding(
+    X_train,
+    y_train,
+    categorical_cols
+):
+    """
+    Apply Weight of Evidence encoding.
+    """
+
+    woe_encoder = WOEEncoder(
+        cols=categorical_cols
+    )
+
+    X_train_woe = woe_encoder.fit_transform(
+        X_train,
+        y_train
+    )
+
+    return X_train_woe, woe_encoder
+
+def calculate_information_value(
+    df,
+    target,
+    feature
+):
+    """
+    Calculate Information Value.
+    """
